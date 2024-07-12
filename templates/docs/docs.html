@@ -1,84 +1,81 @@
 {% extends "base/base.html" %}
 {% block body %}
-<div class="page-docs">
-	{% include "docs/header.html" %}
+<div class="ui stackable very relaxed page grid">
+	<div class="sixteen wide aligned centered column">
+		{% include "docs/header.html" %}
 
 		{% if IsHasReadme %}
-			<div class="ui accordion">
-				<div class="title c-hand">
-					<i class="fas fa-caret-right"></i>
-					<strong>{{Tr(Lang, "docs.display_readme")}}</strong>
-				</div>
-				<div class="content d-hide" style="padding-top: 10px">
-					<div id="readme" class="readme"><script type="text/javascript" src="/{{ReadmePath}}?v={{Timestamp}}"></script></div>
-					<br>
-				</div>
+		<div class="ui accordion">
+			<div class="title">
+				<i class="dropdown icon"></i>
+				<strong>{{Tr(Lang, "docs.display_readme")}}</strong>
 			</div>
+			<div class="content">
+				<div id="readme" class="readme"><script type="text/javascript" src="/{{ReadmePath}}?={{Timestamp}}"></script></div>
+				<br>
+			</div>
+		</div>
 		{% else %}
-			<div id="readme"></div>
+		<div id="readme"></div>
 		{% endif %}
 
 		<div id="markdown" class="markdown">
 			{% for doc in DocJS %}
-				<script type="text/javascript" src="{{doc}}?v={{Timestamp}}"></script>
+			<script type="text/javascript" src="/{{doc}}?={{Timestamp}}"></script>
 			{% endfor %}
 
 			{% if IsHasSubdirs %}
-				<h3 id="_subdirs">
-					<a target="_blank" href="http{{Secure}}://{{ViewDirPath}}">{{Tr(Lang, "docs.directories")}}</a>
-				</h3>
-	
-				<table class="ui very basic table">
-					<thead>
-						<tr>
-							<th>{{Tr(Lang, "docs.path")}}</th>
-							<th>{{Tr(Lang, "docs.synopsis")}}</th>
-						</tr>
-					</thead>
-					<tbody>
-						{% for dir in Subdirs %}
-						<tr>
-							<td><a href="/{{dir.ImportPath}}">{{dir.Name}}</a></td>
-							<td>{{dir.Synopsis}}</td>
-						</tr>
-						{% endfor %}
-					</tbody>
-				</table>
-				<br>
-			{% endif %}
-		</div>
-			
-		<p>
-			{{Tr(Lang, "docs.note.package")}} {{ProjectName}} {% if RefNum == int64(0) %}{{Tr(Lang, "docs.note.import", Link, ImportNum) | safe}}{% else %}{{Tr(Lang, "docs.note.import_ref", Link, ImportNum, RefNum) | safe}}{% endif %} {{Tr(Lang, "docs.note.generated", TimeDuration)}}
-		
-			{% if CanRefresh %}
-				<a href="{{Link}}?refresh" rel="nofollow">
-					{{Tr(Lang, "docs.refresh")}}
-				</a>
-			{% endif %}
-		</p>
-	</div>
+			<h3 id="_subdirs">
+				<a target="_blank" href="http{{Secure}}://{{ViewDirPath}}">{{Tr(Lang, "docs.directories")}}</a>
+			</h3>
 
-	<div class="modal" id="search-export-panel">
-		<a href="#close" class="modal-overlay" aria-label="Close"></a>
-		<div class="modal-container">
-			<div class="modal-header">
-				<a href="#close" class="btn btn-clear float-right" aria-label="Close"></a>
-				<div class="modal-title h5">{{Tr(Lang, "docs.search.title")}}</div>
-			</div>
-			<div class="modal-body" style="min-height: 450px">
-				<div class="content">
-					<div class="form-autocomplete">
-						<div class="form-autocomplete-input form-input">
-							<input id="exports-search" class="form-input" name="q" placeholder="{{Tr(Lang, "docs.search.holder")}}" autocomplete="off" autofocus>
-							<ul class="menu text-left">
-								<li id="search-results" class="menu-item">
-								</li>
-							</ul>
-						</div>
-					</div>
-				</div>
-			</div>
+			<table class="ui very basic table">
+				<thead>
+					<tr>
+						<th>{{Tr(Lang, "docs.path")}}</th>
+						<th>{{Tr(Lang, "docs.synopsis")}}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for dir in Subdirs %}
+					<tr>
+						<td><a href="/{{dir.ImportPath}}">{{dir.Name}}</a></td>
+						<td>{{dir.Synopsis}}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			{% endif %}
 		</div>
+		
+		<div class="ui divider"></div>
+		<p>{{Tr(Lang, "docs.note.package")}} {{ProjectName}} {% if RefNum == int64(0) %}{{Tr(Lang, "docs.note.import", Link, ImportNum) | safe}}{% else %}{{Tr(Lang, "docs.note.import_ref", Link, ImportNum, RefNum) | safe}}{% endif %} {{Tr(Lang, "docs.note.generated", TimeDuration)}}</p>
+		{% if CanRefresh %}
+		<a class="ui green basic small button" href="{{Link}}?refresh" rel="nofollow">
+		  {{Tr(Lang, "docs.refresh")}}
+		</a>
+		{% endif %}
 	</div>
+</div>
+
+<div class="ui small modal search export panel">
+	<div class="header">
+		{{Tr(Lang, "docs.search.title")}}
+	</div>
+	<div class="content">
+		<p>{{Tr(Lang, "docs.search.desc")}}</p>
+		<form class="ui form search export">
+		  <div class="field">
+		    <div class="ui fluid search">
+		      <div class="ui large action input">
+		        <input class="prompt" placeholder="{{Tr(Lang, "docs.search.holder")}}">
+			      <button type="submit" class="ui submit green button">
+			        {{Tr(Lang, "docs.search.button")}}
+			      </button>
+		      </div>
+		    </div>
+		  </div>
+		</form>
+	</div>
+</div>
 {% endblock %}

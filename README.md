@@ -1,4 +1,4 @@
-Go Walker
+Go Walker [![Build Status](https://drone.io/github.com/lonelybeanz/gowalker/status.png)](https://drone.io/github.com/lonelybeanz/gowalker/latest)
 =========
 
 Go Walker is a server that generates Go projects API documentation on the fly for the projects on **GitHub**.

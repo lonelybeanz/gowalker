@@ -18,34 +18,32 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"runtime"
 	"strings"
 
-	"github.com/go-macaron/i18n"
 	"github.com/go-macaron/pongo2"
 	"github.com/go-macaron/session"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "gopkg.in/clog.v1"
+	"github.com/lonelybeanz/gowalker/modules/base"
+	"github.com/lonelybeanz/gowalker/modules/log"
 	"gopkg.in/macaron.v1"
 
-	"github.com/unknwon/gowalker/internal/context"
-	_ "github.com/unknwon/gowalker/internal/prometheus"
-	"github.com/unknwon/gowalker/internal/route"
-	"github.com/unknwon/gowalker/internal/route/apiv1"
-	"github.com/unknwon/gowalker/internal/setting"
+	"github.com/lonelybeanz/gowalker/modules/context"
+	"github.com/lonelybeanz/gowalker/modules/setting"
+	"github.com/lonelybeanz/gowalker/routers"
+	"github.com/lonelybeanz/gowalker/routers/apiv1"
 )
 
-const Version = "2.5.3.1020"
+const APP_VER = "1.9.7.0527"
 
 func init() {
-	setting.AppVer = Version
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	setting.AppVer = APP_VER
 }
 
 // newMacaron initializes Macaron instance.
 func newMacaron() *macaron.Macaron {
 	m := macaron.New()
-	if !setting.DisableRouterLog {
-		m.Use(macaron.Logger())
-	}
+	m.Use(macaron.Logger())
 	m.Use(macaron.Recovery())
 	m.Use(macaron.Static("public",
 		macaron.StaticOptions{
@@ -60,20 +58,20 @@ func newMacaron() *macaron.Macaron {
 	m.Use(pongo2.Pongoer(pongo2.Options{
 		IndentJSON: !setting.ProdMode,
 	}))
-	m.Use(i18n.I18n())
+	m.Use(base.I18n())
 	m.Use(session.Sessioner())
 	m.Use(context.Contexter())
 	return m
 }
 
 func main() {
-	log.Info("Go Walker %s", Version)
+	log.Info("Go Walker %s", APP_VER)
 	log.Info("Run Mode: %s", strings.Title(macaron.Env))
 
 	m := newMacaron()
-	m.Get("/", route.Home)
-	m.Get("/search", route.Search)
-	m.Get("/search/json", route.SearchJSON)
+	m.Get("/", routers.Home)
+	m.Get("/search", routers.Search)
+	m.Get("/search/json", routers.SearchJSON)
 
 	m.Group("/api", func() {
 		m.Group("/v1", func() {
@@ -81,17 +79,15 @@ func main() {
 		})
 	})
 
-	m.Get("/-/metrics", promhttp.Handler())
-
 	m.Get("/robots.txt", func() string {
 		return `User-agent: *
 Disallow: /search`
 	})
-	m.Get("/*", route.Docs)
+	m.Get("/*", routers.Docs)
 
 	listenAddr := fmt.Sprintf("0.0.0.0:%d", setting.HTTPPort)
 	log.Info("Listen: http://%s", listenAddr)
 	if err := http.ListenAndServe(listenAddr, m); err != nil {
-		log.Fatal(2, "Failed to start server: %v", err)
+		log.FatalD(4, "Fail to start server: %v", err)
 	}
 }

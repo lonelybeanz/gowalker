@@ -1,8 +1,10 @@
 $(document).ready(function () {
-    $('.ui.accordion .title').click(function () {
-        var $icon = $(this).find('.fas');
-        var $content = $('.ui.accordion .content');
-        if ($content.hasClass('d-hide')) {
+    $('.dropdown').dropdown({
+        transition: 'drop'
+    });
+    $('.popup').popup();
+    $('.ui.accordion').accordion({
+        onOpen: function () {
             // Resize images if too large.
             if ($('#readme').length) {
                 $(this).find("img").each(function () {
@@ -10,93 +12,83 @@ $(document).ready(function () {
                     $(this).width(w > 600 ? 600 : w);
                 });
             }
-
-            $content.removeClass('d-hide');
-            $icon.removeClass('fa-caret-right');
-            $icon.addClass('fa-caret-down');
-            return;
         }
-
-        $content.addClass('d-hide');
-        $icon.removeClass('fa-caret-down');
-        $icon.addClass('fa-caret-right');
     });
 
-    var delay = (function(){
-        var timer = 0;
-        return function(callback, ms){
-          clearTimeout(timer);
-          timer = setTimeout(callback, ms);
-        };
-    })();
+    function setSearchOptions(semantic_search) {
+        $('.ui.main.search').search({
+            type: "standard",
+            minCharacters: 3,
+            apiSettings: {
+                url: '/search/json?q={query}&semantic_search=' + semantic_search,
+                onResponse: function (json) {
+                    var response = {
+                        results: []
+                    };
 
-    $('#import-search').keyup(function() {
-        delay(function () {
-            var $this = $('#import-search');
-            if ($this.val().length < 3) {
-                $('#search-results').html("");
-                return;
-            }
+                    var maxResults = 7;
+                    $.each(json.results, function (index, item) {
+                        if (index > maxResults) {
+                            return false;
+                        }
 
-            $('.form-autocomplete i.fa-search').addClass('d-hide');
-            $('.form-autocomplete .loading').removeClass('d-hide');
-            $.get('/search/json?q=' + $this.val(), function (data) {
-                $('#search-results').html("");
-                for (var i = 0; i < data.results.length; i++) {
-                    $('#search-results').append(`<a href="` + data.results[i].url + `">
-                    <div class="tile tile-centered">
-                        <div class="tile-content">
-                            <p class="tile-title"><b>` + data.results[i].title + `</b></p>
-                            <p class="tile-subtitle">` + data.results[i].description + `</p>
-                        </div>
-                    </div>
-                </a>`)
-                    if (i+1 < data.results.length) {
-                        $('#search-results').append(`<div class="divider"></div>`)
-                    }
+                        response.results.push({
+                            title: item.title,
+                            description: item.description,
+                            url: item.url
+                        });
+                    });
+
+                    return response;
                 }
-                $('.form-autocomplete .loading').addClass('d-hide');
-                $('.form-autocomplete i.fa-search').removeClass('d-hide');
-            });
-        }, 500)
+            },
+            searchDelay: 500,
+            searchFullText: false
+        });
+    }
+
+    setSearchOptions(localStorage.enable_semantic_search);
+    if (localStorage.enable_semantic_search == 'true') {
+        $('#semantic_search_checkbox').checkbox('check');
+    }
+
+    $('.main.search .search.icon').click(function () {
+        $('.main.search').submit();
+    });
+
+    // Toggle semantic search
+    $('#semantic_search').change(function () {
+        if (this.checked) {
+            setSearchOptions(true);
+        } else {
+            setSearchOptions(false);
+        }
+        $('.ui.main.search').search('clear cache', $('#search_input').value)
+        localStorage.enable_semantic_search = this.checked;
     });
 
     var is_page_docs = $('#readme').length > 0;
 
     if (is_page_docs) {
         // Search export objects.
-        var $searchExportPanel = $('#search-export-panel');
-        $searchExportPanel.find('.btn-clear').click(function () {
-            $searchExportPanel.removeClass('active');
-        })
-        $('#exports-search').keyup(function () {
-            if ($(this).val().length < 1) {
-                $('#search-results').html("");
-                return;
-            }
-
-            $('#search-results').html("");
-            for (var i = 0; i < exportDataSrc.length; i++) {
-                if (exportDataSrc[i].title.toLowerCase().includes($(this).val().toLowerCase())) {
-                    $('#search-results').append(`<a href="#` + exportDataSrc[i].title.replace(/\./g, "_") + `">
-                    <div class="tile tile-centered">
-                        <div class="tile-content">` + exportDataSrc[i].title + `</div>
-                    </div>
-                </a>`)
-                }
-            }
-
-            $('#search-results a').click(function () {
-                $searchExportPanel.removeClass('active');
-            });
+        var $searchExportPanel = $('.search.export.panel');
+        var $searchExportForm = $('.ui.form.search.export');
+        var $searchExportInput = $('.ui.form.search.export input');
+        $searchExportForm.search({source: exportDataSrc});
+        $searchExportForm.submit(function (event) {
+            $searchExportPanel.modal("hide");
+            window.location.href = "#" + $searchExportInput.val().replace(/\./g, "_");
+            event.preventDefault();
         });
     }
 
-    // Help panel
-    var $help_panel = $('#help-panel');
-    $help_panel.find('.btn-clear').click(function () {
-        $help_panel.removeClass('active');
-    })
+    // Control panel.
+    var $control_panel = $('.control.panel');
+    $('#control-panel').click(function (event) {
+        $(this).blur();
+        $control_panel.modal('show');
+        event.preventDefault();
+    });
 
     var preKeyG = 0;
 
@@ -109,23 +101,23 @@ $(document).ready(function () {
 
     $(document).keypress(function (event) {
         // Check if any input box is focused.
-        if ($('input:focus').length > 0) {
+        if ($(':focus').length > 0) {
             return true;
         }
 
         var code = event.keyCode ? event.keyCode : event.charCode;
         switch (code) {
             case 63:                    // for '?' 63
-                $help_panel.addClass('active');
+                $control_panel.modal('show');
                 break;
             case 98:                    // for 'g then b'  'b' 98
-                $help_panel.removeClass('active');
+                $control_panel.modal('hide');
                 Gkey(function () {
                     $('html,body').animate({scrollTop: $(document).height()}, 120);
                 });
                 break;
             case 103:                   // for 'g then g'   'g' 103
-                $help_panel.removeClass('active');
+                $control_panel.modal('hide');
 
                 if (preKeyG === 0) {
                     preKeyG = 1;
@@ -139,8 +131,8 @@ $(document).ready(function () {
                 });
                 break;
             case 115:                   // for 's' 105
-                if (!is_page_docs) return true;
-                $searchExportPanel.addClass('active');
+                if (!is_page_docs)return true;
+                $searchExportPanel.modal('show');
                 break;
             default:
                 preKeyG = 0;
@@ -160,6 +152,7 @@ $(document).ready(function () {
         $($(this).attr('href')).toggle();
         event.preventDefault();
     });
+
 
     // Browse history.
     if ($('#browse_history').length) {
